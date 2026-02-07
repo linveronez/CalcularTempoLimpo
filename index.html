@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<title>Só por hoje</title>
+
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#000000">
+
+<style>
+body{
+    margin:0;
+    font-family: Arial, sans-serif;
+    background:linear-gradient(180deg,#000000,#001a33);
+    color:white;
+    text-align:center;
+    padding:20px;
+}
+
+.container{
+    max-width:420px;
+    margin:auto;
+}
+
+.frase-dia{
+    background:#0a0a0a;
+    padding:12px;
+    border-radius:10px;
+    margin-bottom:15px;
+    font-style:italic;
+}
+
+.contador{
+    font-size:56px;
+    font-weight:bold;
+    margin:10px 0;
+}
+
+.stats{
+    font-size:18px;
+    color:#bbb;
+    margin-bottom:15px;
+}
+
+.card{
+    background:#0a0a0a;
+    padding:12px;
+    border-radius:10px;
+    margin-bottom:15px;
+}
+
+input,button{
+    width:100%;
+    padding:12px;
+    margin:6px 0;
+    font-size:16px;
+    border-radius:8px;
+    border:none;
+}
+
+input{
+    background:#111;
+    color:white;
+    border:1px solid #333;
+}
+
+button{
+    background:#0059d6;
+    color:white;
+}
+
+.medalha{
+    display:inline-block;
+    padding:6px 10px;
+    margin:4px;
+    border-radius:20px;
+    background:#333;
+}
+
+.medalha.ok{
+    background:#00c853;
+    color:black;
+    font-weight:bold;
+}
+
+.medalha.nova{
+    background:#ffd600;
+    color:black;
+    font-weight:bold;
+    animation:pop 0.6s ease;
+}
+
+@keyframes pop{
+    0%{transform:scale(0.6);}
+    70%{transform:scale(1.15);}
+    100%{transform:scale(1);}
+}
+
+/* POPUP */
+.popup{
+    position:fixed;
+    top:20px;
+    left:50%;
+    transform:translateX(-50%);
+    background:#00c853;
+    color:black;
+    padding:12px 18px;
+    border-radius:12px;
+    font-weight:bold;
+    display:none;
+}
+</style>
+</head>
+
+<body>
+
+<div id="popupConquista" class="popup"></div>
+
+<div class="container">
+
+<h2>Só por hoje</h2>
+
+<div id="fraseDia" class="frase-dia"></div>
+
+<div id="contador" class="contador">--</div>
+
+<div id="stats" class="stats"></div>
+
+<div id="medalhas" class="card"></div>
+
+<div class="card">
+<input type="text" id="nome" placeholder="Seu nome">
+<input type="text" id="data" placeholder="D/M/AA ou DD/MM/AAAA">
+
+<button onclick="calcular()">Atualizar</button>
+<button onclick="reiniciarHoje()">Recomeçar hoje</button>
+<button onclick="fraseMotivacional()">Frase motivacional</button>
+</div>
+
+<div id="historico" class="card"></div>
+
+</div>
+
+<script>
+
+const frasesOffline=[
+"Um dia de cada vez.",
+"Continue, só por hoje.",
+"Pequenos passos constroem vitórias.",
+"Respire, você está indo bem.",
+"A recuperação acontece agora."
+];
+
+const frasesMotivacionais=[
+"Você já venceu dias difíceis antes.",
+"Desistir não vai te levar onde quer chegar.",
+"Foque apenas em hoje.",
+"A constância vence a força.",
+"Orgulhe-se de continuar."
+];
+
+function carregarFrase(){
+    let hoje=new Date();
+    let index=(hoje.getDate())%frasesOffline.length;
+    document.getElementById("fraseDia").innerText=frasesOffline[index];
+}
+carregarFrase();
+
+function fraseMotivacional(){
+    let f=frasesMotivacionais[Math.floor(Math.random()*frasesMotivacionais.length)];
+    alert(f);
+}
+
+function converterData(texto){
+    const regex=/^(\d{1,2})\/(\d{1,2})\/(\d{2}|\d{4})$/;
+    const match=texto.match(regex);
+    if(!match) throw "erro";
+
+    let dia=parseInt(match[1]);
+    let mes=parseInt(match[2])-1;
+    let ano=parseInt(match[3]);
+    if(ano<100) ano+=2000;
+
+    return new Date(ano,mes,dia);
+}
+
+function mostrarPopup(texto){
+    let popup=document.getElementById("popupConquista");
+    popup.innerText="🏆 Conquista desbloqueada: "+texto;
+    popup.style.display="block";
+    setTimeout(()=>popup.style.display="none",3000);
+}
+
+function mostrarMedalhas(dias,nome){
+
+    const metas=[
+        {dias:30, texto:"1 mês"},
+        {dias:60, texto:"2 meses"},
+        {dias:90, texto:"3 meses"},
+        {dias:180, texto:"6 meses"},
+        {dias:270, texto:"9 meses"},
+        {dias:365, texto:"1 ano"},
+        {dias:540, texto:"1 ano e meio"},
+        {dias:730, texto:"2 anos"}
+    ];
+
+    let chave="conquistas_"+nome;
+    let conquistasSalvas=JSON.parse(localStorage.getItem(chave)||"[]");
+
+    let html="<b>Conquistas</b><br>";
+
+    metas.forEach(meta=>{
+        if(dias>=meta.dias){
+
+            if(!conquistasSalvas.includes(meta.texto)){
+                conquistasSalvas.push(meta.texto);
+                mostrarPopup(meta.texto);
+                html+=`<span class="medalha nova">${meta.texto}</span>`;
+            }else{
+                html+=`<span class="medalha ok">${meta.texto}</span>`;
+            }
+
+        }else{
+            html+=`<span class="medalha">${meta.texto}</span>`;
+        }
+    });
+
+    localStorage.setItem(chave,JSON.stringify(conquistasSalvas));
+    document.getElementById("medalhas").innerHTML=html;
+}
+
+function salvarHistorico(nome,dias){
+    let hist=JSON.parse(localStorage.getItem("historico")||"{}");
+    hist[nome]=Math.max(hist[nome]||0,dias);
+    localStorage.setItem("historico",JSON.stringify(hist));
+
+    let html="<b>Histórico</b><br>";
+    for(let pessoa in hist){
+        html+=`${pessoa}: melhor sequência ${hist[pessoa]} dias<br>`;
+    }
+    document.getElementById("historico").innerHTML=html;
+}
+
+function calcular(){
+    try{
+        let nome=document.getElementById("nome").value.trim();
+        if(!nome) nome="Amigo";
+
+        let dataTexto=document.getElementById("data").value.trim();
+        let dataInicio=converterData(dataTexto);
+
+        localStorage.setItem("data",dataTexto);
+        localStorage.setItem("nome",nome);
+
+        let hoje=new Date();
+        let dias=Math.floor((hoje-dataInicio)/(1000*60*60*24));
+        if(dias<0) throw "erro";
+
+        document.getElementById("contador").innerText=dias;
+        let anos=Math.floor(dias/365);
+
+        document.getElementById("stats").innerText=
+        `${nome}, você está há ${dias} dias • ${anos} anos`;
+
+        mostrarMedalhas(dias,nome);
+        salvarHistorico(nome,dias);
+
+    }catch{
+        alert("Data inválida");
+    }
+}
+
+function reiniciarHoje(){
+    if(!confirm("Tem certeza? Você não precisa desistir hoje.")) return;
+
+    let hoje=new Date();
+    let texto=`${hoje.getDate()}/${hoje.getMonth()+1}/${hoje.getFullYear()}`;
+    document.getElementById("data").value=texto;
+    calcular();
+}
+
+window.onload=function(){
+    let data=localStorage.getItem("data");
+    let nome=localStorage.getItem("nome");
+
+    if(nome) document.getElementById("nome").value=nome;
+    if(data){
+        document.getElementById("data").value=data;
+        calcular();
+    }
+}
+
+if("serviceWorker" in navigator){
+    navigator.serviceWorker.register("sw.js");
+}
+
+</script>
+</body>
+</html>
