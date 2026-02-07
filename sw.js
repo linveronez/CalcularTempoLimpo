@@ -1,9 +1,10 @@
-const CACHE_NAME="sohoje-v1";
+const CACHE_NAME="sohoje-v2";
 const urlsToCache=[
-  "index.html",
-  "manifest.json",
-  "192.png",
-  "512.png"
+  "./",
+  "./index.html",
+  "./manifest.json",
+  "./192.png",
+  "./512.png"
 ];
 
 self.addEventListener("install",event=>{
@@ -16,6 +17,6 @@ self.addEventListener("install",event=>{
 self.addEventListener("fetch",event=>{
   event.respondWith(
     caches.match(event.request)
-    .then(response=>response||fetch(event.request))
+    .then(response=> response || fetch(event.request))
   );
 });

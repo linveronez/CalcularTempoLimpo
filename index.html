@@ -96,7 +96,6 @@ button{
     100%{transform:scale(1);}
 }
 
-/* POPUP */
 .popup{
     position:fixed;
     top:20px;
@@ -130,11 +129,11 @@ button{
 
 <div class="card">
 <input type="text" id="nome" placeholder="Seu nome">
-<input type="text" id="data" placeholder="D/M/AA ou DD/MM/AAAA">
+<input type="text" id="data" placeholder="Data que ficou limpo (D/M/AA ou DD/MM/AAAA)">
 
 <button onclick="calcular()">Calcular Tempo Limpo</button>
-<button onclick="reiniciarHoje()">Recomeçar hoje</button>
-<button onclick="fraseMotivacional()">Frase motivacional</button>
+<button onclick="reiniciarHoje()">Recomeçar hoje, caso infelizmente tenha recaído.</button>
+<button onclick="fraseMotivacional()">Frases motivacionais</button>
 </div>
 
 <div id="historico" class="card"></div>
@@ -186,9 +185,28 @@ function converterData(texto){
 
 function mostrarPopup(texto){
     let popup=document.getElementById("popupConquista");
-    popup.innerText="🏆 Conquista desbloqueada: "+texto;
+    popup.innerText=texto;
     popup.style.display="block";
     setTimeout(()=>popup.style.display="none",3000);
+}
+
+function mostrarProximoMarco(dias){
+    const metas=[30,60,90,180,270,365,540,730];
+    let proximaMeta=null;
+
+    for(let meta of metas){
+        if(dias < meta){
+            proximaMeta = meta;
+            break;
+        }
+    }
+
+    if(proximaMeta){
+        let faltam = proximaMeta - dias;
+        if(faltam <= 7){
+            mostrarPopup(`🎯 Faltam ${faltam} dias para ${proximaMeta} dias! Continue firme.`);
+        }
+    }
 }
 
 function mostrarMedalhas(dias,nome){
@@ -214,7 +232,7 @@ function mostrarMedalhas(dias,nome){
 
             if(!conquistasSalvas.includes(meta.texto)){
                 conquistasSalvas.push(meta.texto);
-                mostrarPopup(meta.texto);
+                mostrarPopup("🏆 Conquista desbloqueada: "+meta.texto);
                 html+=`<span class="medalha nova">${meta.texto}</span>`;
             }else{
                 html+=`<span class="medalha ok">${meta.texto}</span>`;
@@ -249,12 +267,17 @@ function calcular(){
         let dataTexto=document.getElementById("data").value.trim();
         let dataInicio=converterData(dataTexto);
 
-        localStorage.setItem("data",dataTexto);
-        localStorage.setItem("nome",nome);
-
+        // corrigir bug de horário
         let hoje=new Date();
+        hoje.setHours(0,0,0,0);
+        dataInicio.setHours(0,0,0,0);
+
         let dias=Math.floor((hoje-dataInicio)/(1000*60*60*24));
         if(dias<0) throw "erro";
+
+        localStorage.setItem("data",dataTexto);
+        localStorage.setItem("nome",nome);
+        localStorage.setItem("dataISO", dataInicio.toISOString());
 
         document.getElementById("contador").innerText=dias;
         let anos=Math.floor(dias/365);
@@ -264,6 +287,7 @@ function calcular(){
 
         mostrarMedalhas(dias,nome);
         salvarHistorico(nome,dias);
+        mostrarProximoMarco(dias);
 
     }catch{
         alert("Data inválida");
@@ -271,7 +295,7 @@ function calcular(){
 }
 
 function reiniciarHoje(){
-    if(!confirm("Tem certeza? Você não precisa desistir hoje.")) return;
+    if(!confirm("Tem certeza? O importante é recomeçar.")) return;
 
     let hoje=new Date();
     let texto=`${hoje.getDate()}/${hoje.getMonth()+1}/${hoje.getFullYear()}`;
